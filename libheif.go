@@ -6,7 +6,6 @@ import (
 	"image"
 	"image/jpeg"
 	"image/png"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -44,7 +43,7 @@ func saveAsJpeg(img image.Image, filename string, quality int) error {
 	}
 
 	// Save the JPEG data to a file
-	if err := ioutil.WriteFile(filename, out.Bytes(), 0644); err != nil {
+	if err := os.WriteFile(filename, out.Bytes(), 0644); err != nil {
 		return fmt.Errorf("could not save JPEG image as %s: %w", filename, err)
 	}
 
@@ -77,7 +76,7 @@ func saveAsPng(img image.Image, filename string) error {
 	}
 
 	// Save the PNG data to a file
-	if err := ioutil.WriteFile(filename, out.Bytes(), 0644); err != nil {
+	if err := os.WriteFile(filename, out.Bytes(), 0644); err != nil {
 		return fmt.Errorf("could not save PNG image as %s: %w", filename, err)
 	}
 
@@ -161,7 +160,7 @@ func convertFileToHeif(filename string, newFileName string) error {
 	return nil
 }
 
-// returnImageFromHeif decodes a HEIF file and returns the resulting image.
+// ReturnImageFromHeif decodes a HEIF file and returns the resulting image.
 //
 // It expects the filename of a HEIF file as input. If the file cannot be
 // decoded or the decoded image is not in HEIF format, an error is returned.
@@ -173,7 +172,7 @@ func convertFileToHeif(filename string, newFileName string) error {
 //	if err != nil {
 //		log.Fatal(err)
 //	}
-func returnImageFromHeif(filename string) (image.Image, error) {
+func ReturnImageFromHeif(filename string) (image.Image, error) {
 	// Validate input
 	if filename == "" {
 		return nil, fmt.Errorf("filename must not be empty")
@@ -207,7 +206,7 @@ func returnImageFromHeif(filename string) (image.Image, error) {
 //	}
 func HeifToPng(heifImagePath string, newPngImagePath string) error {
 	// Convert the HEIF image to the internal image representation.
-	img, err := returnImageFromHeif(heifImagePath)
+	img, err := ReturnImageFromHeif(heifImagePath)
 	if err != nil {
 		// If there was an error, return it to the caller.
 		return err
@@ -229,7 +228,7 @@ func HeifToPng(heifImagePath string, newPngImagePath string) error {
 //	}
 func HeifToJpeg(heifImagePath string, newJpegImagePath string, quality int) error {
 	// Convert the HEIF image to the internal image representation.
-	img, err := returnImageFromHeif(heifImagePath)
+	img, err := ReturnImageFromHeif(heifImagePath)
 	if err != nil {
 		// If there was an error, return it to the caller.
 		return err
