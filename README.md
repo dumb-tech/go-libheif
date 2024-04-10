@@ -69,6 +69,7 @@ package main
 
 import (
 	"log"
+	"image/png"
 
 	"github.com/MaestroError/go-libheif"
 )
