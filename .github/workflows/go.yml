@@ -7,38 +7,26 @@ on:
     branches: [ maestro ]
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        go: ['1.16']
-        os: ['ubuntu-latest', 'macos-latest']
+  test:
+    runs-on: ubuntu-latest
 
     steps:
     - name: Check Out Code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
-    - name: Set up Go 1.x
-      uses: actions/setup-go@v2
+    - name: Build test image
+      run: docker build -t go-libheif-test -f Dockerfile.test .
+
+    - name: Run tests with coverage
+      run: |
+        docker run --rm \
+          -v ${{ github.workspace }}/coverage:/app/coverage \
+          go-libheif-test \
+          go test -v -coverprofile=coverage/coverage.out -covermode=atomic ./...
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
       with:
-        go-version: ${{ matrix.go }}
-
-    - name: Install Homebrew (Ubuntu)
-      if: startsWith(matrix.os, 'ubuntu')
-      run: |
-        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-        echo "/home/linuxbrew/.linuxbrew/bin" >> $GITHUB_PATH
-
-    - name: Install dependencies
-      run: |
-        brew install cmake make pkg-config x265 libde265 libjpeg libtool
-        brew install libheif
-
-    - name: Download Go modules
-      run: go get -v -t -d ./...
-
-    - name: Run Tests
-      run: go test -v ./...
-
-    - name: Build
-      run: go build -v ./...
+        files: coverage/coverage.out
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false

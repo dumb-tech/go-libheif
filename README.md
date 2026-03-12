@@ -1,6 +1,9 @@
 # go-libheif
 
-GoLang wrapper for the libheif library, providing easy-to-use APIs for HEIC to JPEG/PNG conversions and vice versa (Also provides support for AVIF to JPEG/PNG conversions).  
+[![Go](https://github.com/dumb-tech/go-libheif/actions/workflows/go.yml/badge.svg)](https://github.com/dumb-tech/go-libheif/actions/workflows/go.yml)
+[![codecov](https://codecov.io/gh/dumb-tech/go-libheif/branch/maestro/graph/badge.svg)](https://codecov.io/gh/dumb-tech/go-libheif)
+
+GoLang wrapper for the libheif library, providing easy-to-use APIs for HEIC to JPEG/PNG conversions and vice versa (Also provides support for AVIF to JPEG/PNG conversions).
  This package was originally developed to support the [php-heic-to-jpg](https://github.com/MaestroError/php-heic-to-jpg) package, which had [problems](https://github.com/MaestroError/php-heic-to-jpg/issues/15) while converting some HEIF images.
 
 #### Implementation:
@@ -35,112 +38,73 @@ go get github.com/MaestroError/go-libheif
 
 ### Usage
 
-This library provides functions to convert images between HEIC format and other common formats such as JPEG and PNG.
+This library provides functions to convert images between HEIC/HEIF/AVIF format and other common formats such as JPEG, PNG, and WebP.
 
-To convert an image from HEIC / HEIF / AVIF to JPEG or PNG:
-
-```go
-package main
-
-import (
-	"log"
-
-	"github.com/MaestroError/go-libheif"
-)
-
-func main() {
-	err := libheif.HeifToJpeg("input.heic", "output.jpeg", 80)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = libheif.HeifToPng("input.heic", "output.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-```
-
-To convert an image from HEIC to `image.Image` and process image:
+#### Decode HEIF to JPEG/PNG
 
 ```go
-package main
+// Simple one-step conversion
+err := libheif.HeifToJpeg("input.heic", "output.jpeg", 80)
+err = libheif.HeifToPng("input.heic", "output.png")
 
-import (
-	"log"
-	"image/png"
-
-	"github.com/MaestroError/go-libheif"
-)
-
-func main() {
-	img, err := libheif.ReturnImageFromHeif("input.heic")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-    err = png.Encode(os.Stdout, img)
-    if err != nil {
-      t.Errorf("Failed to encode image: %v", err)
-    }
-
-}
-
+// Or use the decode API (same result, explicit naming)
+err = libheif.DecodeHeifToJpeg("input.heic", "output.jpeg", 80)
+err = libheif.DecodeHeifToPng("input.heic", "output.png")
 ```
 
-_Note: It finds hard to convert some jpeg and png files to heic, see libheif_test.go:14 for details_
-
-To convert an image from HEIC / HEIF / AVIF to JPEG or PNG:
+#### Get image.Image from HEIF
 
 ```go
-package main
-
-import (
-	"log"
-
-	"github.com/MaestroError/go-libheif"
-)
-
-func main() {
-	err := libheif.HeifToJpeg("input.heic", "output.jpeg", 80)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = libheif.HeifToPng("input.heic", "output.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
+img, err := libheif.ReturnImageFromHeif("input.heic")
 ```
 
-To save an image as HEIC:
+#### Encode to HEIF with options
 
 ```go
-package main
-
-import (
-	"image"
-	"log"
-
-	"github.com/MaestroError/go-libheif"
+// Encode an in-memory image
+err := libheif.EncodeImageAsHeif(img, "output.heic",
+    libheif.WithQuality(85),
+    libheif.WithCompression(libheif.CompressionHEVC),
+    libheif.WithLossless(false),
 )
 
-func main() {
-	img := image.NewRGBA(image.Rect(0, 0, 100, 100))
-	err := libheif.SaveImageAsHeif(img, "png", "output.heic")
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
+// Convert a file (JPEG/PNG) to HEIF
+err = libheif.ConvertToHeif("input.png", "output.heic",
+    libheif.WithQuality(90),
+)
 ```
 
-_Note: Quality for **HeifToJpeg** function and image format for **SaveImageAsHeif** function should be provided. The quality value ranges from 1 to 100 inclusive, higher values meaning better quality. The format for **SaveImageAsHeif** is the format of the original image._
+#### WebP to HEIF
 
-Please consult the GoDoc [documentation](https://pkg.go.dev/github.com/MaestroError/go-libheif) for more detailed information about the provided functions and their usage.
+```go
+err := libheif.WebpToHeif("input.webp", "output.heic",
+    libheif.WithQuality(85),
+)
+```
+
+#### Encoder options
+
+| Option | Description |
+|--------|-------------|
+| `WithQuality(q int)` | Quality 1-100 (higher = better) |
+| `WithCompression(c Compression)` | `CompressionHEVC`, `CompressionAV1`, `CompressionAVC`, `CompressionJPEG` |
+| `WithLossless(b bool)` | Enable lossless encoding |
+| `WithLogging(l LogLevel)` | `LogLevelNone`, `LogLevelBasic`, `LogLevelFull` |
+
+#### Legacy API
+
+The original functions (`HeifToJpeg`, `HeifToPng`, `ImageToHeif`, `SaveImageAsHeif`) remain available for backward compatibility.
+
+Please consult the GoDoc [documentation](https://pkg.go.dev/github.com/dumb-tech/go-libheif) for more detailed information.
+
+### Running tests
+
+The easiest way to run the test suite is via Docker:
+
+```bash
+docker build -t go-libheif-test -f Dockerfile.test .
+docker run --rm go-libheif-test
+```
 
 ### Contributions
 
