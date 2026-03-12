@@ -12,11 +12,11 @@ import (
 // a 2x2 NRGBA image via EncodeImageAsHeif.
 func createTestHeifFile(t *testing.T) string {
 	t.Helper()
-	img := image.NewNRGBA(image.Rect(0, 0, 2, 2))
-	img.Set(0, 0, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
-	img.Set(1, 0, color.NRGBA{R: 0, G: 255, B: 0, A: 255})
-	img.Set(0, 1, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
-	img.Set(1, 1, color.NRGBA{R: 255, G: 255, B: 0, A: 255})
+	img := image.NewRGBA(image.Rect(0, 0, 2, 2))
+	img.Set(0, 0, color.RGBA{R: 255, G: 0, B: 0, A: 255})
+	img.Set(1, 0, color.RGBA{R: 0, G: 255, B: 0, A: 255})
+	img.Set(0, 1, color.RGBA{R: 0, G: 0, B: 255, A: 255})
+	img.Set(1, 1, color.RGBA{R: 255, G: 255, B: 0, A: 255})
 
 	tmpDir := t.TempDir()
 	heifPath := filepath.Join(tmpDir, "test.heic")
