@@ -1,0 +1,44 @@
+# Build:  docker build -t go-libheif-test .
+# Run:    docker run --rm go-libheif-test
+
+FROM golang:1.25-bookworm
+
+# Install build dependencies for libheif and CGo
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    cmake \
+    pkg-config \
+    libde265-dev \
+    libx265-dev \
+    libjpeg-dev \
+    libdav1d-dev \
+    libwebp-dev \
+    webp \
+    && rm -rf /var/lib/apt/lists/*
+
+# Build and install libheif 1.16.2 from source to match the Go module version
+ARG LIBHEIF_VERSION=1.16.2
+RUN curl -fsSL "https://github.com/strukturag/libheif/releases/download/v${LIBHEIF_VERSION}/libheif-${LIBHEIF_VERSION}.tar.gz" \
+    | tar xz -C /tmp \
+    && cmake -S /tmp/libheif-${LIBHEIF_VERSION} -B /tmp/libheif-build \
+       -DCMAKE_BUILD_TYPE=Release \
+       -DCMAKE_INSTALL_PREFIX=/usr/local \
+       -DWITH_EXAMPLES=OFF \
+       -DWITH_DEFLATE_HEADER_COMPRESSION=OFF \
+    && cmake --build /tmp/libheif-build --parallel $(nproc) \
+    && cmake --install /tmp/libheif-build \
+    && rm -rf /tmp/libheif-${LIBHEIF_VERSION} /tmp/libheif-build \
+    && ldconfig
+
+WORKDIR /app
+
+# Cache dependency downloads as a separate layer
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the rest of the source
+COPY . .
+
+# Create test_images dir for test output (excluded from build context by .dockerignore)
+RUN mkdir -p test_images
+
+CMD ["go", "test", "-v", "./..."]

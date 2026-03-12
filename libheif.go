@@ -280,7 +280,7 @@ func SaveImageAsHeif(i image.Image, format string, newHeifImagePath string) erro
 
 	// Encode the image in HEIF format
 	const quality = 100
-	ctx, err := heif.EncodeFromImage(i, heif.CompressionHEVC, quality, heif.LosslessModeEnabled, heif.LoggingLevelFull)
+	ctx, err := heif.EncodeFromImage(i, heif.Compression(heif.CompressionHEVC), quality, heif.LosslessModeEnabled, heif.LoggingLevelFull)
 	if err != nil {
 		return fmt.Errorf("failed to HEIF encode image: %w", err)
 	}
@@ -327,7 +327,7 @@ func exampleHeifLowlevel(filename string) {
 
 	fmt.Printf("Image size: %v × %v\n", handle.GetWidth(), handle.GetHeight())
 
-	img, err := handle.DecodeImage(heif.ColorspaceUndefined, heif.ChromaUndefined, nil)
+	img, err := handle.DecodeImage(heif.Colorspace(heif.ColorspaceUndefined), heif.Chroma(heif.ChromaUndefined), nil)
 	if err != nil {
 		fmt.Printf("Could not decode image: %s\n", err)
 	} else if i, err := img.GetImage(); err != nil {
