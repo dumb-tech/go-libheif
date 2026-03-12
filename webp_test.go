@@ -1,34 +1,48 @@
 package libheif
 
 import (
+	"image"
+	"image/color"
+	"image/png"
 	"os"
+	"os/exec"
 	"testing"
 )
 
-// minimalWebP is a minimal valid lossless WebP file (1x1 pixel, white).
-// RIFF header + WEBP signature + VP8L chunk with a 1x1 white pixel.
-// Generated offline from the VP8L lossless format spec.
-var minimalWebP = []byte{
-	// RIFF header
-	0x52, 0x49, 0x46, 0x46, // "RIFF"
-	0x24, 0x00, 0x00, 0x00, // file size - 8 = 36
-	0x57, 0x45, 0x42, 0x50, // "WEBP"
-	// VP8L chunk
-	0x56, 0x50, 0x38, 0x4C, // "VP8L"
-	0x0D, 0x00, 0x00, 0x00, // chunk size = 13
-	// VP8L bitstream: signature byte + 1x1 image
-	0x2F,                   // VP8L signature
-	0x00,                   // width minus 1 (low 8 bits) = 0 → width=1
-	0x00,                   // bits: width cont + height minus 1 bits
-	0x00,                   // more image data
-	0xFE,                   // lossless transform + 4-pixel color cache
-	0xFF, 0xFF, 0xFF, 0xFF, // ARGB pixel: white
-	0x00, 0x00, 0x00, 0x00, // padding
-}
+// createTestWebP generates a valid WebP file at path using cwebp.
+// Skips the test if cwebp is not available (e.g. outside Docker).
+func createTestWebP(t *testing.T, path string) {
+	t.Helper()
 
-// writeMinimalWebP writes a minimal WebP file to path and returns any error.
-func writeMinimalWebP(path string) error {
-	return os.WriteFile(path, minimalWebP, 0644)
+	cwebp, err := exec.LookPath("cwebp")
+	if err != nil {
+		t.Skip("cwebp not available — run tests in Docker")
+	}
+
+	// Create a small PNG in a temp file
+	pngPath := path + ".png"
+	img := image.NewRGBA(image.Rect(0, 0, 2, 2))
+	img.Set(0, 0, color.RGBA{R: 255, A: 255})
+	img.Set(1, 0, color.RGBA{G: 255, A: 255})
+	img.Set(0, 1, color.RGBA{B: 255, A: 255})
+	img.Set(1, 1, color.RGBA{R: 255, G: 255, B: 255, A: 255})
+
+	f, err := os.Create(pngPath)
+	if err != nil {
+		t.Fatalf("failed to create temp PNG: %v", err)
+	}
+	if err := png.Encode(f, img); err != nil {
+		f.Close()
+		t.Fatalf("failed to encode PNG: %v", err)
+	}
+	f.Close()
+	t.Cleanup(func() { os.Remove(pngPath) })
+
+	// Convert PNG to WebP using cwebp
+	cmd := exec.Command(cwebp, "-quiet", pngPath, "-o", path)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("cwebp failed: %v\n%s", err, out)
+	}
 }
 
 func TestWebpToHeif_EmptyPaths(t *testing.T) {
@@ -46,9 +60,7 @@ func TestWebpToHeif_EmptyPaths(t *testing.T) {
 
 	// Empty heifPath
 	srcPath := dir + "/source.webp"
-	if err := writeMinimalWebP(srcPath); err != nil {
-		t.Fatalf("failed to write test webp: %v", err)
-	}
+	createTestWebP(t, srcPath)
 	err = WebpToHeif(srcPath, "")
 	if err == nil {
 		t.Fatal("expected error for empty heifPath, got nil")
@@ -92,9 +104,7 @@ func TestWebpToHeif_ValidWebp(t *testing.T) {
 	srcPath := dir + "/input.webp"
 	dstPath := dir + "/output.heic"
 
-	if err := writeMinimalWebP(srcPath); err != nil {
-		t.Fatalf("failed to write test webp: %v", err)
-	}
+	createTestWebP(t, srcPath)
 	t.Cleanup(func() { os.Remove(dstPath) })
 
 	err := WebpToHeif(srcPath, dstPath)
@@ -125,9 +135,7 @@ func TestWebpToHeif_WithOptions(t *testing.T) {
 	srcPath := dir + "/input.webp"
 	dstPath := dir + "/output-opts.heic"
 
-	if err := writeMinimalWebP(srcPath); err != nil {
-		t.Fatalf("failed to write test webp: %v", err)
-	}
+	createTestWebP(t, srcPath)
 	t.Cleanup(func() { os.Remove(dstPath) })
 
 	err := WebpToHeif(srcPath, dstPath, WithQuality(50), WithLossless(false))
