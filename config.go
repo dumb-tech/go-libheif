@@ -38,3 +38,45 @@ func defaultConfig() *encoderConfig {
 // EncoderOption configures an encoderConfig via the Functional Options pattern.
 // Pass any number of EncoderOption values to encoding functions.
 type EncoderOption func(*encoderConfig)
+
+// WithQuality returns an EncoderOption that sets the encoder quality.
+// Values are clamped silently: below 1 is set to 1, above 100 is set to 100.
+func WithQuality(quality int) EncoderOption {
+	return func(c *encoderConfig) {
+		if quality < 1 {
+			quality = 1
+		} else if quality > 100 {
+			quality = 100
+		}
+		c.quality = quality
+	}
+}
+
+// WithCompression returns an EncoderOption that sets the encoder compression type.
+func WithCompression(compression Compression) EncoderOption {
+	return func(c *encoderConfig) {
+		c.compression = compression
+	}
+}
+
+// WithLossless returns an EncoderOption that enables or disables lossless encoding.
+func WithLossless(lossless bool) EncoderOption {
+	return func(c *encoderConfig) {
+		c.lossless = lossless
+	}
+}
+
+// WithLogging returns an EncoderOption that sets the encoder log verbosity level.
+func WithLogging(logging LogLevel) EncoderOption {
+	return func(c *encoderConfig) {
+		c.logging = logging
+	}
+}
+
+// applyOptions applies a variadic list of EncoderOption functions to a config.
+// This helper is consumed by Phase 3 encoding functions to build their final config.
+func applyOptions(cfg *encoderConfig, opts ...EncoderOption) {
+	for _, opt := range opts {
+		opt(cfg)
+	}
+}
